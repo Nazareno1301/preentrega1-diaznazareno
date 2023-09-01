@@ -21,29 +21,76 @@ productos.push(new Producto(3, "buzo", "underarmour", 9720, "xl", "blanco"));
 productos.push(new Producto(4, "short", "topper", 3010, "s", "rojo"));
 productos.push(new Producto(5, "calza", "topper", 30140, "l", "rosa"));
 
+//agregar un producto al carrito
+function agregarAlCarrito(producto) {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    carrito.push(producto);
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    mostrarCarrito(); 
+}
+
+// mostrar el carrito
+function mostrarCarrito() {
+    let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    let carritoDiv = document.createElement("div");
+    carritoDiv.innerHTML = "<h2>Este es tu carrito</h2>";
+
+
+    let total = 0; 
+    carrito.forEach((producto) => {
+        let productoDiv = document.createElement("div");
+        productoDiv.innerHTML = `
+            <p>${producto.nombre} - $${producto.precio}</p>
+            
+        `;
+        carritoDiv.appendChild(productoDiv);
+
+        total += producto.precio;
+    });
+
+    if (carrito.length > 0) {
+        let totalCarrito = document.createElement("p");
+        totalCarrito.textContent = `Total: $${total.toFixed(2)}`;
+        carritoDiv.appendChild(totalCarrito);
+
+        let vaciarCarritoBtn = document.createElement("button");
+        vaciarCarritoBtn.textContent = "Vaciar Carrito";
+        vaciarCarritoBtn.id = "vaciar-carrito";
+        carritoDiv.appendChild(vaciarCarritoBtn);
+
+        vaciarCarritoBtn.addEventListener("click", () => {
+            localStorage.removeItem("carrito");
+            mostrarCarrito();
+        });
+    }
+
+    document.getElementById("carrito-contenedor").innerHTML = "";
+    document.getElementById("carrito-contenedor").appendChild(carritoDiv);
+}
+
+mostrarCarrito();
+
 let contenedor = document.getElementById("contenedor");
 productos.forEach((item) => {
     let div = document.createElement("div");
+    div.className = "producto";
     div.innerHTML = `
-    <h2>${item.nombre}</h2>
-    <h4>id: ${item.id}</h4>
-    <p>Nombre: ${item.marca}</p>
-    <b>$${item.precio}</b>
-    <button class="boton">calcular descuento</button>
+        <h2>${item.nombre}</h2>
+        <h4>id: ${item.id}</h4>
+        <p>Nombre: ${item.marca}</p>
+        <b>$${item.precio}</b>
+        <button class="boton">calcular descuento y agregar al carrito</button>
     `;
 
     contenedor.append(div);
 });
 
-// Agregar evento de clic a todos los botones
 let botones = document.getElementsByClassName("boton");
 for (let i = 0; i < botones.length; i++) {
     botones[i].addEventListener("click", () => {
-        let precioProducto = prompt("Coloque el precio del producto seleccionado");
-        precioProducto = parseInt(precioProducto);
-
+        const precioProducto = productos[i].precio;
         if (isNaN(precioProducto)) {
-            alert("Por favor ingrese un precio válido");
+            alert("Por favor escriba el precio de su producto en números");
             return;
         }
 
@@ -64,6 +111,8 @@ for (let i = 0; i < botones.length; i++) {
         const codigoAleatorio = generadorDeCodigo();
         alert(`Tu precio con descuento es ${nuevoPrecio}`);
         alert(`Tu código de 8 dígitos es: #${codigoAleatorio} copielo, se lo pediremos al finalizar la compra`);
+
+        agregarAlCarrito(productos[i]);
     });
 }
 
