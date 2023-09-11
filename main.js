@@ -1,51 +1,81 @@
-class Producto {
-    constructor(id, nombre, marca, precio, talle, color) {
-        this.id = id;
-        this.nombre = nombre;
-        this.precio = precio;
-        this.marca = marca;
-        this.talle = talle;
-        this.color = color;
-        this.vendido = false;
-    }
+const buscarInput = document.getElementById("buscar");
+const contenedor = document.getElementById("contenedor");
+let productos = [];
 
-    vender() {
-        this.vendido = true;
-    }
+function obtenerProductos() {
+    fetch('https://fakestoreapi.com/products?limit=5')
+        .then((res) => res.json())
+        .then((data) => {
+            productos = data;
+            mostrarProductos(productos); 
+        });
 }
 
-const productos = [];
-productos.push(new Producto(1, "remera", "adidas", 4000, "L", "rojo"));
-productos.push(new Producto(2, "jogging", "nike", 6750, "m", "negro"));
-productos.push(new Producto(3, "buzo", "underarmour", 9720, "xl", "blanco"));
-productos.push(new Producto(4, "short", "topper", 3010, "s", "rojo"));
-productos.push(new Producto(5, "calza", "topper", 30140, "l", "rosa"));
+function mostrarProductos(productosAMostrar) {
+    contenedor.innerHTML = ""; 
 
-//agregar un producto al carrito
+    productosAMostrar.forEach((producto) => {
+        const productoDiv = document.createElement("div");
+        productoDiv.innerHTML = `
+            <h2>${producto.title}</h2>
+            <img src="${producto.image}" alt="${producto.title}">
+            <p>${producto.description}</p>
+            <b>$${producto.price}</b>
+            <button class="boton">Agregar al Carrito</button>
+        `;
+
+        contenedor.appendChild(productoDiv);
+
+        productoDiv.querySelector(".boton").addEventListener("click", () => {
+            agregarAlCarrito(producto);
+        });
+    });
+}
+
+buscarInput.addEventListener("input", () => {
+    const consulta = buscarInput.value.toLowerCase(); 
+
+    const productosFiltrados = productos.filter((producto) => {
+        return producto.title.toLowerCase().includes(consulta);
+    });
+
+    mostrarProductos(productosFiltrados);
+});
+
+obtenerProductos();
+
 function agregarAlCarrito(producto) {
     let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
     carrito.push(producto);
     localStorage.setItem("carrito", JSON.stringify(carrito));
-    mostrarCarrito(); 
+
+    Swal.fire({
+        position: 'center',
+        icon: 'success',
+        title: 'Producto agregado al carrito',
+        showConfirmButton: false,
+        timer: 1500
+    });
+
+    mostrarCarrito();
 }
 
-// mostrar el carrito
 function mostrarCarrito() {
     let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
     let carritoDiv = document.createElement("div");
-    carritoDiv.innerHTML = "<h2>Este es tu carrito</h2>";
+    carritoDiv.innerHTML = "<h2>Carrito de Compras</h2>";
 
+    let total = 0;
 
-    let total = 0; 
     carrito.forEach((producto) => {
         let productoDiv = document.createElement("div");
         productoDiv.innerHTML = `
-            <p>${producto.nombre} - $${producto.precio}</p>
-            
+            <p>${producto.title} - $${producto.price}</p>
         `;
         carritoDiv.appendChild(productoDiv);
 
-        total += producto.precio;
+        total += producto.price;
     });
 
     if (carrito.length > 0) {
@@ -60,7 +90,34 @@ function mostrarCarrito() {
 
         vaciarCarritoBtn.addEventListener("click", () => {
             localStorage.removeItem("carrito");
+            Swal.fire({
+                position: 'center',
+                icon: 'success',
+                title: 'Carrito eliminado',
+                showConfirmButton: false,
+                timer: 1500
+            });
+
             mostrarCarrito();
+        });
+
+        let finalizarCompra = document.createElement("button");
+        finalizarCompra.textContent = "Finalizar compra";
+        finalizarCompra.id = "fin";
+        carritoDiv.appendChild(finalizarCompra);
+
+        finalizarCompra.addEventListener("click", () => {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Compra Finalizada!',
+                text: 'Gracias por tu compra.',
+                confirmButtonText: 'Aceptar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem("carrito");
+                    mostrarCarrito();
+                }
+            });
         });
     }
 
@@ -69,60 +126,3 @@ function mostrarCarrito() {
 }
 
 mostrarCarrito();
-
-let contenedor = document.getElementById("contenedor");
-productos.forEach((item) => {
-    let div = document.createElement("div");
-    div.className = "producto";
-    div.innerHTML = `
-        <h2>${item.nombre}</h2>
-        <h4>id: ${item.id}</h4>
-        <p>Nombre: ${item.marca}</p>
-        <b>$${item.precio}</b>
-        <button class="boton">calcular descuento y agregar al carrito</button>
-    `;
-
-    contenedor.append(div);
-});
-
-let botones = document.getElementsByClassName("boton");
-for (let i = 0; i < botones.length; i++) {
-    botones[i].addEventListener("click", () => {
-        const precioProducto = productos[i].precio;
-        if (isNaN(precioProducto)) {
-            alert("Por favor escriba el precio de su producto en números");
-            return;
-        }
-
-        let descuento;
-        if (precioProducto >= 10000) {
-            descuento = 0.30;
-        } else if (precioProducto >= 5000 && precioProducto < 10000) {
-            descuento = 0.15;
-        } else {
-            descuento = 0.05;
-        }
-
-        function calcularPrecioConDescuento(precio, descuento) {
-            return precio - (precio * descuento);
-        }
-
-        let nuevoPrecio = calcularPrecioConDescuento(precioProducto, descuento);
-        const codigoAleatorio = generadorDeCodigo();
-        alert(`Tu precio con descuento es ${nuevoPrecio}`);
-        alert(`Tu código de 8 dígitos es: #${codigoAleatorio} copielo, se lo pediremos al finalizar la compra`);
-
-        agregarAlCarrito(productos[i]);
-    });
-}
-
-function generadorDeCodigo() {
-    let codigo = '';
-    for (let i = 0; i < 8; i++) {
-        const numeroAleatorio = Math.floor(Math.random() * 10);
-        codigo += numeroAleatorio;
-    }
-    return codigo;
-}
-
-alert("Gracias por usar la calculadora de descuentos");
